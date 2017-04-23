@@ -11,30 +11,31 @@ TCX_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 def add_track(track_element, time, hr, cadence, speed, distance, power):
     track_point = etree.SubElement(track_element, 'Trackpoint')
+    _sub_element(track_point, 'Time', time)
 
-    etree.SubElement(track_point, 'Time').text = time
-    hr_element = etree.SubElement(track_point, 'HeartRateBpm')
-    etree.SubElement(hr_element, 'Value').text = str(hr)
-    etree.SubElement(track_point, 'DistanceMeters').text = str(distance)
-    etree.SubElement(track_point, 'Cadence').text = str(cadence)
+    hr_el = _sub_element(track_point, 'HeartRateBpm')
+    _sub_element(hr_el, 'Value', hr)
 
-    extensions_element = etree.SubElement(track_point, 'Extensions')
-    tpx_element = etree.SubElement(extensions_element, 'TPX', xmlns=TPXNS)
-    etree.SubElement(tpx_element, 'Speed').text = str(speed)
-    etree.SubElement(tpx_element, 'Watts').text = str(power)
+    _sub_element(track_point, 'DistanceMeters', distance)
+    _sub_element(track_point, 'Cadence', cadence)
+
+    extensions_el = _sub_element(track_point, 'Extensions')
+    tpx_element = _sub_element(extensions_el, 'TPX', xmlns=TPXNS)
+    _sub_element(tpx_element, 'Speed', speed)
+    _sub_element(tpx_element, 'Watts', power)
 
 
 def add_lap(activity_element, lap, time):
+    _sub_element(activity_element, 'Id', time.strftime(TCX_TIME_FORMAT))
 
-    etree.SubElement(activity_element, 'Id').text = time.strftime(TCX_TIME_FORMAT)
-    lap_element = etree.SubElement(activity_element, 'Lap', StartTime=time.strftime(TCX_TIME_FORMAT))
-    etree.SubElement(lap_element, 'TotalTimeSeconds').text = str(len(lap.tracks) * 6)
-    etree.SubElement(lap_element, 'DistanceMeters').text = str(lap.total_distance)
-    etree.SubElement(lap_element, 'Calories').text = str(lap.total_calories)
-    etree.SubElement(lap_element, 'AverageHeartRateBpm').text = str(lap.average_hr)
-    etree.SubElement(lap_element, 'Cadence').text = str(lap.average_cadence)
-    track_element = etree.SubElement(lap_element, 'Track')
+    lap_el = _sub_element(activity_element, 'Lap', StartTime=time.strftime(TCX_TIME_FORMAT))
+    _sub_element(lap_el, 'TotalTimeSeconds', len(lap.tracks) * 6)
+    _sub_element(lap_el, 'DistanceMeters', lap.total_distance)
+    _sub_element(lap_el, 'Calories', lap.total_calories)
+    _sub_element(lap_el, 'AverageHeartRateBpm', lap.average_hr)
+    _sub_element(lap_el, 'Cadence', lap.average_cadence)
 
+    track_element = _sub_element(lap_el, 'Track')
     for track in lap.tracks:
         time = time + timedelta(seconds=6)
         add_track(track_element,
@@ -53,13 +54,20 @@ def from_laps(laps):
 
     page = etree.Element('TrainingCenterDatabase', nsmap=NSMAP)
     doc = etree.ElementTree(page)
-    activities_element = etree.SubElement(page, 'Activities')
-    activity_element = etree.SubElement(activities_element, 'Activity', Sport="Biking")
+    activities_el = _sub_element(page, 'Activities')
+    activity_el = _sub_element(activities_el, 'Activity', Sport="Biking")
 
     for lap in laps:
-        time = add_lap(activity_element, lap, time)
+        time = add_lap(activity_el, lap, time)
 
     return doc
+
+
+def _sub_element(el, name, value=None, **kwargs):
+    sub_el = etree.SubElement(el, name, **kwargs)
+    if value is not None:
+        sub_el.text = str(value)
+    return sub_el
 
 
 def _to_meters_per_second(value):
@@ -67,7 +75,7 @@ def _to_meters_per_second(value):
 
 
 def _to_seconds(value):
-    return value / 60 / 60
+    return value / 3600
 
 
 def _to_meters(value):
