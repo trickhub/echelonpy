@@ -15,6 +15,11 @@ setup(name='echelonpy',
       install_requires=[
           'lxml',
       ],
+      tests_require=[
+          'freezegun',
+          'nose',
+      ],
+      test_suite="nose.collector",
       entry_points={
           'console_scripts': ['echelonpy = echelonpy.__main__:main']
       },

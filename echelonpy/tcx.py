@@ -67,7 +67,7 @@ def _to_meters_per_second(value):
 
 
 def _to_seconds(value):
-    return value / 3200
+    return value / 60 / 60
 
 
 def _to_meters(value):
