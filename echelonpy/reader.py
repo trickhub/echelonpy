@@ -3,6 +3,7 @@ import logging
 import re
 from itertools import chain
 
+TRACK_COLS = 6
 TOTAL = r'Stage_'
 DISTANCE = r'distance'
 TOTAL_END = r'KCal'
@@ -48,7 +49,7 @@ class Track(object):
 def read(file_path):
     with open(file_path, 'rb') as csv_file:
         rows = csv.reader(csv_file, delimiter=',')
-        return [_read_lap(chain([row], rows)) for name, row in _safe_generate(rows) if _is_track_row(name)]
+        return [_read_lap(chain([row], rows)) for name, row in _safe_generate(rows) if _is_track_row(row)]
 
 
 def _read_lap(rows):
@@ -92,9 +93,13 @@ def _safe_generate(rows):
         yield name, row
 
 
-def _is_track_row(value):
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
+def _is_track_row(row):
+    if len(row) == TRACK_COLS:
+        try:
+            float(row[0])
+            return True
+        except ValueError:
+            pass
+    return False
+
+
