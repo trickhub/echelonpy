@@ -48,7 +48,7 @@ class Track(object):
 def read(file_path):
     with open(file_path, 'rb') as csv_file:
         rows = csv.reader(csv_file, delimiter=',')
-        return [_read_lap(chain([row], rows)) for desc, val, row in _safe_generate(rows) if _is_float(desc)]
+        return [_read_lap(chain([row], rows)) for name, row in _safe_generate(rows) if _is_track_row(name)]
 
 
 def _read_lap(rows):
@@ -59,41 +59,40 @@ def _read_lap(rows):
     logging.debug("parsing lap")
     tracks = []
 
-    for desc, val, row in _safe_generate(rows):
-        if _is_float(desc):
-            tracks.append(Track.from_row(row))
-        elif re.search(TOTAL, desc):
+    for name, row in _safe_generate(rows):
+        if re.search(TOTAL, name):
             distance, calories = _read_lap_total(rows)
             logging.info("Parsed lap with {} tracks, Distance: {}, Calories: {}"
                          .format(len(tracks), distance, calories))
             return Lap(total_distance=distance, total_calories=calories, tracks=tracks)
 
+        tracks.append(Track.from_row(row))
+
 
 def _read_lap_total(rows):
     logging.debug("reading lap total")
     distance = None
-    for desc, val, row in _safe_generate(rows):
-        if re.search(DISTANCE, desc):
-            distance = float(val)
-        elif re.match(TOTAL_END, desc):
-            calories = float(val)
+    for name, row in _safe_generate(rows):
+        if re.search(DISTANCE, name):
+            distance = float(row[1])
+        elif re.match(TOTAL_END, name):
+            calories = float(row[1])
             return distance, calories
 
 
 def _safe_generate(rows):
     while True:
         row = next(rows)
-        desc = row[0] if len(row) > 0 else None
-        val = row[1] if len(row) > 1 else None
+        name = row[0] if len(row) > 0 else None
 
-        if desc is None:
+        if name is None:
             continue
 
-        logging.debug("in row {}:{}".format(desc, val))
-        yield desc, val, row
+        logging.debug("in row {}:{}".format(name, row))
+        yield name, row
 
 
-def _is_float(value):
+def _is_track_row(value):
     try:
         float(value)
         return True
