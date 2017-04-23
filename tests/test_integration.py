@@ -1,10 +1,8 @@
 from os import path
 
 from freezegun import freeze_time
-from lxml import etree
 from nose.tools import assert_equals
-from echelonpy import reader
-from echelonpy import tcx
+from echelonpy.__main__ import generate_output
 
 
 @freeze_time("2017-04-23T12:57:42Z")
@@ -21,9 +19,8 @@ def _integration_test(fixture_name):
     input_path = path.join(path.dirname(__file__), 'fixtures', '{}.csv'.format(fixture_name))
     expected_output_path = path.join(path.dirname(__file__), 'fixtures', '{}.tcx'.format(fixture_name))
 
-    laps = reader.read(input_path)
-    doc = etree.tostring(tcx.from_laps(laps), xml_declaration=True, encoding="utf-8", pretty_print=True)
+    actual_tcx = generate_output(input_path)
 
     with open(expected_output_path, "r") as expected_file:
-        expected_lines = expected_file.read()
-        assert_equals(doc, expected_lines)
+        expected_tcx = expected_file.read()
+        assert_equals(expected_tcx, actual_tcx)

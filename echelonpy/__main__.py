@@ -18,13 +18,17 @@ def arg_parser():
 
 def main():
     args = arg_parser().parse_args()
-
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
-    laps = read(args.csv_file)
-    doc = from_laps(laps)
 
-    tcx = etree.tostring(doc, xml_declaration=True, encoding="utf-8", pretty_print=True)
+    tcx = generate_output(args.csv_file)
 
     output_filename = args.output if args.output is not None else os.path.splitext(args.csv_file)[0] + ".tcx"
     with open(output_filename, 'w') as output_file:
         output_file.write(tcx)
+
+
+def generate_output(csv_file):
+    laps = read(csv_file)
+    doc = from_laps(laps)
+
+    return etree.tostring(doc, xml_declaration=True, encoding="utf-8", pretty_print=True)
