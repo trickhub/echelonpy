@@ -1,4 +1,3 @@
-import logging
 from datetime import timedelta, datetime
 from lxml import etree
 
@@ -6,6 +5,8 @@ NSMAP = {
     None: 'http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2',
     'ax2': 'http://www.garmin.com/xmlschemas/ActivityExtension/v2'
 }
+TPXNS = 'http://www.garmin.com/xmlschemas/ActivityExtension/v2'
+TCX_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def add_track(track_element, time, hr, cadence, speed, distance, power):
@@ -18,16 +19,15 @@ def add_track(track_element, time, hr, cadence, speed, distance, power):
     etree.SubElement(track_point, 'Cadence').text = str(cadence)
 
     extensions_element = etree.SubElement(track_point, 'Extensions')
-    tpx_element = etree.SubElement(extensions_element, 'TPX',
-                                   xmlns='http://www.garmin.com/xmlschemas/ActivityExtension/v2')
+    tpx_element = etree.SubElement(extensions_element, 'TPX', xmlns=TPXNS)
     etree.SubElement(tpx_element, 'Speed').text = str(speed)
     etree.SubElement(tpx_element, 'Watts').text = str(power)
 
 
 def add_lap(activity_element, lap, time):
 
-    etree.SubElement(activity_element, 'Id').text = time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    lap_element = etree.SubElement(activity_element, 'Lap', StartTime=time.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    etree.SubElement(activity_element, 'Id').text = time.strftime(TCX_TIME_FORMAT)
+    lap_element = etree.SubElement(activity_element, 'Lap', StartTime=time.strftime(TCX_TIME_FORMAT))
     etree.SubElement(lap_element, 'TotalTimeSeconds').text = str(len(lap.tracks) * 6)
     etree.SubElement(lap_element, 'DistanceMeters').text = str(lap.total_distance)
     etree.SubElement(lap_element, 'Calories').text = str(lap.total_calories)
@@ -38,10 +38,10 @@ def add_lap(activity_element, lap, time):
     for track in lap.tracks:
         time = time + timedelta(seconds=6)
         add_track(track_element,
-                  time=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  time=time.strftime(TCX_TIME_FORMAT),
                   hr=track.hr,
                   cadence=track.cadence,
-                  speed=_to_meters(track.speed) / 60.0 / 60.0,
+                  speed=_to_meters_per_second(track.speed),
                   distance=_to_meters(track.distance),
                   power=track.power,
                   )
@@ -60,6 +60,14 @@ def from_laps(laps):
         time = add_lap(activity_element, lap, time)
 
     return doc
+
+
+def _to_meters_per_second(value):
+    return _to_seconds(_to_meters(value))
+
+
+def _to_seconds(value):
+    return value / 3200
 
 
 def _to_meters(value):
